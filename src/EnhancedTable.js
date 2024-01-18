@@ -1,3 +1,4 @@
+import axios from "axios";
 import * as React from "react";
 import PropTypes from "prop-types";
 import { alpha } from "@mui/material/styles";
@@ -131,8 +132,8 @@ const headCells = [
   { id: "address", numeric: false, disablePadding: false, label: "Address" },
   { id: "email", numeric: false, disablePadding: false, label: "Email" },
   { id: "mobile", numeric: false, disablePadding: false, label: "Mobile" },
- 
 ];
+
 function EnhancedTableToolbar(props) {
   const { numSelected, onDelete } = props;
 
@@ -205,25 +206,25 @@ const EnhancedTable = () => {
   const [editedRow, setEditedRow] = React.useState({});
   const [searchQuery, setSearchQuery] = React.useState("");
 
+  const apiUrl = "https://crudcrud.com/api/0f0f7631454642188fed5dddc6c5f860/sanya";
+
   const handleEdit = (id) => {
     setEditMode(id);
     const rowToEdit = rows.find((row) => row.id === id);
     setEditedRow(rowToEdit);
   };
-  // for search function
+
   const searchByFields = (query) => {
     const updatedRows = rows.filter((row) => {
       const lowercaseQuery = query.toLowerCase();
-  
-      // Check against multiple fields (name, email, mobile)
+
       return (
         row.name.toLowerCase().includes(lowercaseQuery) ||
         row.email.toLowerCase().includes(lowercaseQuery) ||
         row.mobile.toLowerCase().includes(lowercaseQuery)
-        // Add more fields as needed
       );
     });
-  
+
     setVisibleRows(
       stableSort(updatedRows, getComparator(order, orderBy)).slice(
         page * rowsPerPage,
@@ -231,36 +232,43 @@ const EnhancedTable = () => {
       )
     );
   };
+
   const handleSearchChange = (event) => {
     const { value } = event.target;
     setSearchQuery(value);
     searchByFields(value);
   };
 
-
-    
-
   const handleSave = () => {
-    const updatedRows = rows.map((row) =>
-      row.id === editedRow.id ? editedRow : row
-    );
-    setRows(updatedRows);
-    setEditMode(null);
-    setEditedRow({});
+    axios
+      .put(`${apiUrl}/${editedRow.id}`, editedRow)
+      .then((response) => {
+        console.log("Data updated successfully:", response.data);
 
-    // Store the updated data in localStorage
-    localStorage.setItem("react_data", JSON.stringify(updatedRows));
-    const localStorageData = JSON.parse(localStorage.getItem("react_data")) || [];
-    const refreshedRows = localStorageData.map((item, index) => ({
-      id: index + 1,
-      ...item,
-    }));
-    setVisibleRows(
-      stableSort(refreshedRows, getComparator(order, orderBy)).slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
-      )
-    );
+        const updatedRows = rows.map((row) =>
+          row.id === editedRow.id ? editedRow : row
+        );
+        setRows(updatedRows);
+        setEditMode(null);
+        setEditedRow({});
+
+        localStorage.setItem("react_data", JSON.stringify(updatedRows));
+        const localStorageData =
+          JSON.parse(localStorage.getItem("react_data")) || [];
+        const refreshedRows = localStorageData.map((item, index) => ({
+          id: index + 1,
+          ...item,
+        }));
+        setVisibleRows(
+          stableSort(refreshedRows, getComparator(order, orderBy)).slice(
+            page * rowsPerPage,
+            page * rowsPerPage + rowsPerPage
+          )
+        );
+      })
+      .catch((error) => {
+        console.error("Error updating data:", error);
+      });
   };
 
   const handleCancel = () => {
@@ -321,6 +329,7 @@ const EnhancedTable = () => {
     );
     localStorage.setItem("react_data", JSON.stringify(updatedRows));
   };
+  
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -330,7 +339,6 @@ const EnhancedTable = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-
 
   const handleEditChange = (e, field) => {
     const { value } = e.target;
@@ -343,27 +351,27 @@ const EnhancedTable = () => {
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
   React.useEffect(() => {
-    const localStorageData = JSON.parse(localStorage.getItem("react_data")) || [];
-    const updatedRows = localStorageData.map((item, index) => ({
-      id: index + 1,
-      ...item,
-    }));
-    const filteredRows = updatedRows.filter(
-      (row) =>
-        row.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        row.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        row.mobile.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setRows(updatedRows);
-    setVisibleRows(
-      stableSort(updatedRows, getComparator(order, orderBy)).slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
-      )
-    );
+    fetch(apiUrl)
+      .then((response) => response.json())
+      .then((data) => {
+        const apiRows = data.map((item, index) => ({
+          id: index + 1,
+          name: item.name,
+          address: item.address,
+          email: item.email,
+          mobile: item.mobile,
+        }));
+
+        setRows(apiRows);
+        setVisibleRows(
+          stableSort(apiRows, getComparator(order, orderBy)).slice(
+            page * rowsPerPage,
+            page * rowsPerPage + rowsPerPage
+          )
+        );
+      })
+      .catch((error) => console.error("Error fetching data:", error));
   }, [order, orderBy, page, rowsPerPage]);
-
-
 
   return (
     <Box sx={{ width: "100%" }}>

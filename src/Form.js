@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Container = styled.div`
   display: flex;
@@ -89,10 +90,6 @@ const Form = () => {
     password: "",
   });
 
-  const [storedData, setStoredData] = useState(
-    JSON.parse(localStorage.getItem("react_data")) || []
-  );
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -145,23 +142,21 @@ const Form = () => {
     return valid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Save data to localStorage
-      const newData = { ...formData, timestamp: new Date().toISOString() };
-      setStoredData((prevStoredData) => {
-        const updatedData = [...prevStoredData, newData];
-        console.log(updatedData);
-        try {
-          localStorage.setItem("react_data", JSON.stringify(updatedData));
-          navigate("DataTable");
-          console.log("xyz");
-        } catch (error) {
-          console.error("Error storing data in local storage:", error);
-        }
-        return updatedData;
-      });
+      try {
+        // Save data to the API using Axios
+        const response = await axios.post(
+          "https://crudcrud.com/api/0f0f7631454642188fed5dddc6c5f860/sanya",
+          { ...formData, timestamp: new Date().toISOString() }
+        );
+
+        console.log("Data successfully submitted:", response.data);
+        navigate("DataTable");
+      } catch (error) {
+        console.error("Error submitting data to the API:", error);
+      }
 
       // Clear form data
       setFormData({
@@ -171,10 +166,6 @@ const Form = () => {
         address: "",
         password: "",
       });
-
-      // alert("Form submitted successfully!");
-    } else {
-      // alert("Form has errors. Please check and submit again.");
     }
   };
 
